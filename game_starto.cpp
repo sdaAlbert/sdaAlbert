@@ -1,47 +1,79 @@
 ﻿#include"Header.h"
 #include"Things.h"
 
-using namespace std;
-
-void print_player()
+int game_starto(SOCKADDR_IN addrServ)
 {
-	cout << "name:" << user_player->show_name() << '\t'
-		<< "EXP:" << user_player->show_EXP() << '\t'
-		<< "level:" << user_player->show_level() << '\t'
-		<< "the passed num:" << user_player->show_pass_num() << "\n";
-}
-void print_question_setter()
-{
-	cout << "name:" << user_question_setter->show_name() << '\t'
-		<< "EXP:" << user_question_setter->show_EXP() << '\t'
-		<< "level:" << user_question_setter->show_level() << '\t'
-		<< "words num:" << user_question_setter->show_word_num() << "\n";
-}
-int update_player(vector<string> tmp2)
-{
-	string name = tmp2[0];
-	int EXP_add= atoi(tmp2[1].c_str());
-
-	vector<player>::iterator playerIter = all_player.begin();
-	for (; playerIter != all_player.end();)
+	string in_word;
+	int tmpEXP=0;
+	int capacity = 0,round=1;
+	int index = 0;
+	capacity = word_v.size();
+	if (!capacity) { cout << "run out of words!please add words first\n"; return 0; }
+	//排序单词长度
+	sort(word_v.begin(), word_v.end(), [](const string& a1, const string& a2) {return a1.size() < a2.size(); });
+	
+	cout << "how many round you want" <<"\n";
+	cin >> round;
+	for (int i=0;i<round;i++)
 	{
-		if (playerIter->show_name() == name)
+		cout << "\n\nround " << i+1 << "\n";
+		cout << "This word will disappear in 3s please remember:\n";
+
+		srand(time(NULL));
+		index = capacity/round*i+ rand() % (capacity/round);
+		reround:cout << word_v.at(index)<<"       3s";
+
+		Sleep(1000);
+		cout << "\033[2K\r";
+		cout << word_v.at(index) << "       2s";
+		Sleep(1000);
+		cout << "\033[2K\r"; 
+		cout << word_v.at(index) << "       1s";
+		Sleep(1000);
+		cout << "\033[2K\r";
+		cout << "please repeat the word:";
+
+		auto start = std::chrono::high_resolution_clock::now();
+		cin >> in_word;
+		auto end = chrono::high_resolution_clock::now();
+		auto duration = chrono::duration_cast<chrono::milliseconds>(end - start);
+		cout << "using Time: " << duration.count() << " ms." << "\n";
+
+		if (in_word == word_v.at(index))
 		{
-			user_player = playerIter;
-			user_player->update_EXP(EXP_add);
-			user_player->update_level();
-			user_player->inc_pass_num();
-			
-			break;
+			cout << "bingo\n";
+			tmpEXP=(i + 1)* duration.count() / 1000;
+			now_player.update_EXP((i + 1) * duration.count() / 1000);
+			now_player.update_level();
+			now_player.inc_pass_num();
+			update_player(addrServ,tmpEXP);
+
 		}
 		else
-			playerIter++;
+		{
+			cout << "wrong words，mission failed let's do it again:\n" ;
+			goto reround;
+		}
 	}
-	vector<player>::iterator iter_p;
-	fstream f_player("player.csv", ios::out);
-	for (iter_p = all_player.begin(); iter_p != all_player.end(); iter_p++)
+	print_player();
+	cout << "game over" << "\n";
+	return 0;
+}
+
+void update_player(SOCKADDR_IN addrServ,int tmpEXP)
+{
+	SOCKET sockClient = socket_init(addrServ);
+	string tmpstring = now_player.show_name() + "," + to_string(tmpEXP);
+	int flushtag = -1;
+	flushtag = getsockinfo(GAME, tmpstring, sockClient);
+	closesocket(sockClient);
+	for (int i = 0; i < 2&&flushtag != 0; i++)
 	{
-		f_player << iter_p->show_name() << ',' << iter_p->show_EXP() << ',' << iter_p->show_level() << ',' << iter_p->show_pass_num() << "\n";
+		sockClient = socket_init(addrServ);
+		flushtag = getsockinfo(GAME, tmpstring, sockClient);
+		closesocket(sockClient);
 	}
-	return 1;
+	if (flushtag == 0)cout << "Result Upload Success" << "\n";
+	else cout << "Result Upload Failure" << "\n";
+	return;
 }

@@ -16,6 +16,4 @@
 #include<iterator>
 #include<set>
 #include<winsock2.h>
-
-#define MaxSize 1024
 using namespace std;
