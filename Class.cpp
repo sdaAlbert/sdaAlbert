@@ -1,4 +1,5 @@
 ﻿#include "Header.h"
+#include "Class.h"
 #include "Things.h"
 
 man::man()
@@ -53,6 +54,7 @@ void man::update_level()
 
 player::player()
 {
+	name = "0";
 	level = 0;
 	EXP = 0;
 	pass_num = 0;
@@ -113,6 +115,7 @@ void player::update_EXP(int difficulty)
 
 question_setter::question_setter()
 {
+	name = "0";
 	EXP = 0;
 	level = 0;
 	word_num = 0;

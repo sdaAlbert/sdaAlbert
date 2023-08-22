@@ -3,6 +3,7 @@
 #define EXP_BASE 10 //最少可获得的经验值
 using namespace std;
 
+
 //基类
 class man
 {

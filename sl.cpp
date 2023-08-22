@@ -1,143 +1,129 @@
 ﻿#include"Header.h"
 #include"Things.h"
+#include"Class.h"
+player now_player;
+question_setter now_question_setter;
 
-int sign_up(vector<string>& tmppaper)
+void sign_up(SOCKADDR_IN addrServ)
 {
-	if (tmppaper[0] == "1")
+	string type;
+	string a;
+	string name;
+	cout << "Are you a player(p) or a question setter(q)?\n";
+	cin >> type;
+	cout << "username:\n";
+	cin >> name;
+	SOCKET sockClient = socket_init(addrServ);
+	if (type == "p")a =  "1," + name;
+	if (type == "q")a = "2," + name;
+	getsockinfo(SIGN, a, sockClient);
+	closesocket(sockClient);
+
+	cin.clear();
+	cin.ignore(INT_MAX, '\n');//清除输入缓冲区的当前行 
+}
+
+int login(SOCKADDR_IN addrServ)
+{
+	string name;
+	int lr;
+	cout << "Are you a player(p) or a question setter(q)?\n";
+	cin>>type;
+	cout << "username:\n";
+	cin>>name;
+	if (type == "p")
 	{
-		player p(tmppaper[1]);
-			bool user_existed = false;
-			for (auto &iter : all_player)
-			{
-				if (iter.show_name() == p.show_name())
-				{
-					user_existed = true;
-				}
-			}
-			if (user_existed)
-			{
-				cout << "user is existed,please login" << "\n";
-				return 2;
-			}
+		SOCKET sockClient = socket_init(addrServ);
+		string a = "1,";
+		a += name;
+		lr = getsockinfo(LOGIN,a , sockClient);
+		closesocket(sockClient);
 
-			all_player.push_back(p);
-
-			fstream f_player("player.csv", ios::app);
-			if (!f_player) { cerr << "cannot open player.csv" << "\n"; return 0; }
-			f_player << p.show_name() << ',' << p.show_EXP() << ',' << p.show_level() << ',' << p.show_pass_num() << "\n";
-			cout << "sign up success" << "\n";
-			return 1;
+		if (lr == 0)
+		{
+			cout << "socket error\n";
+		}
+		else if (lr == 1)
+		{
+			cout << "player log in success\nWelcome, " + name + "!\n";
+			player p_tmp(name);
+			now_player = p_tmp;
+		}
+		else if (lr == 2)
+		{
+			cout << "not found p\n";
+		}
+		else if (lr == 3)
+		{
+			cout << "already login!\n";
+		}
 	}
-	else if (tmppaper[0] == "2")
+	if (type == "q")
 	{
-		question_setter q(tmppaper[1]);
+		SOCKET sockClient = socket_init(addrServ);
+		string a = "2,";
+		a += name;
+		lr = getsockinfo(LOGIN,a, sockClient);
+		closesocket(sockClient);
 
-		bool user_exist = false;
-		for (auto &iter : all_question_setter)
+		if (lr == 0)
 		{
-			if (iter.show_name() == q.show_name())
-			{
-				user_exist = true;
-			}
+			cout << "socket error\n";
 		}
-		if (user_exist)
+		else if (lr == 1)
 		{
-			cout << "user is existed,please login" << "\n";
-			return 2;
+			cout << "question_setter log in success\nWelcome, " + name + "!\n";
+			question_setter q_tmp(name);
+			now_question_setter = q_tmp;
 		}
+		else if (lr == 2)
+		{
+			cout << "not found q\n";
+		}
+		}
+	return lr;
+}
 
-		all_question_setter.push_back(q);
+void logout(SOCKADDR_IN addrServ)
+{
 
-		fstream f_question_setter("question_setter.csv", ios::app);
-		if (!f_question_setter) { cerr << "cannot open question_setter.csv" << "\n"; return 0; }
-		f_question_setter << q.show_name() << ',' << q.show_EXP() << ',' << q.show_level() << ',' << q.show_word_num() << "\n";
-		cout << "sign up success" << "\n";
-		return 1;
+	if (type == "p")
+	{
+		SOCKET sockClient = socket_init(addrServ);
+		string a = now_player.show_name();
+		int logout_result = getsockinfo(LOGOUT, a, sockClient);
+		if (logout_result == 2)
+		{
+			cout << "not found this player\n";
+			return;
+		}
+		print_player();
+		cout << "log out\n";
+	}
+	else if (type == "q")
+	{
+		print_question_setter();
+
+		cout << "log out\n";
 	}
 	else
 	{
-		cout << "not right type please choose p or q\n"; 
+		cout << "not right type please choose p or q\n";
 	}
-	return 0;
+	getchar();
 }
 
-int login(vector<string>& tmppaper)
+void print_player()
 {
-	string name=tmppaper[1];
-	
-	cout << "login\n";
-
-	if (tmppaper[0]=="1")
-	{
-		vector<player>::iterator cur_p = online_player.begin();
-		while (cur_p != online_player.end())
-		{
-			if ((*cur_p).show_name() == name)
-			{
-				cout << "already login";
-				return 3;
-			}
-			cur_p++;
-		}
-
-		 cur_p = all_player.begin();
-			while (cur_p != all_player.end())
-			{
-				if ((*cur_p).show_name() == name)
-				{
-					user_player = cur_p;
-					online_player.push_back(*user_player);
-
-					return 1;
-				}
-				else
-				{
-					cur_p++;
-				}
-			}
-
-			return 2;
-		
-	}
-	else if (tmppaper[0] == "2")
-			{
-				vector<question_setter>::iterator cur_p = all_question_setter.begin();
-				while (cur_p != all_question_setter.end())
-				{
-					if (cur_p->show_name() == name)
-					{
-						user_question_setter = cur_p;
-						return 1;
-					}
-					else
-					{
-						cur_p++;
-					}
-				}
-				return 2;
-			}
-		
+	cout << "name:" << now_player.show_name() << '\t'
+		<< "EXP:" << now_player.show_EXP() << '\t'
+		<< "level:" << now_player.show_level() << '\t'
+		<< "the passed num:" << now_player.show_pass_num() << "\n";
 }
-
-int logout(vector<string>& tmppaper)
+void print_question_setter()
 {
-		string name = tmppaper[0];
-
-		cout << "logout\n";
-
-		vector<player>::iterator cur_p = online_player.begin();
-		while (cur_p != online_player.end())
-		{
-			cout << (*cur_p).show_name()<<"\t*\t";
-			if ((*cur_p).show_name() == name)
-			{
-				online_player.erase(cur_p);
-				return 1;
-			}
-				cur_p++;
-		}
-		return 2;//not found
-
-
+	cout << "name:" << now_question_setter.show_name() << '\t'
+		<< "EXP:" << now_question_setter.show_EXP() << '\t'
+		<< "level:" << now_question_setter.show_level() << '\t'
+		<< "words num:" << now_question_setter.show_word_num() << "\n";
 }
-
